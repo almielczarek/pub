@@ -1,14 +1,14 @@
 [package]
-name = "share"
+name = "pub"
 version = "0.1.0"
 authors = ["Alexander Mielczarek <almielczarek@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-gotham = "*"
-gotham_derive = "*"
+gotham = "0.3"
+gotham_derive = "0.3"
 tera = "0.11"
 mime = "0.3"
 serde = "1"
 serde_derive = "1"
-hyper = "*"
+hyper = "0.12"
