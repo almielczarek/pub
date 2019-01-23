@@ -1,4 +1,5 @@
-use std::fs::{self, DirEntry, File};
+use std::ffi::OsString;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
@@ -7,15 +8,55 @@ use hyper::Uri;
 use mime::Mime;
 use mime::{TEXT_HTML, TEXT_PLAIN};
 
+use askama::Template;
+
+struct Link {
+    href: String,
+    name: String,
+}
+
+#[derive(Template)]
+#[template(path = "directory.html")]
+struct DirectoryListing {
+    current_path: String,
+    links: Vec<Link>,
+    breadcrumbs: Vec<Link>,
+}
+
 fn sanitize_path(path: &Path) -> PathBuf {
-    path.components()
-        .fold(PathBuf::new(), |mut acc, component| match component {
+    let mut acc = PathBuf::new();
+
+    for component in path.components() {
+        match component {
             Component::Normal(x) => {
                 acc.push(x);
-                acc
             }
-            _ => acc,
+            _ => (),
+        }
+    }
+
+    acc
+}
+
+fn breadcrumbs(path: &Path) -> Vec<Link> {
+    let sanitized = sanitize_path(path);
+    let mut acc = PathBuf::new();
+    let mut breadcrumbs = Vec::new();
+
+    breadcrumbs.push(Link {
+        href: String::from("/"),
+        name: String::from("root"),
+    });
+
+    for component in sanitized.components() {
+        acc.push(component);
+        breadcrumbs.push(Link {
+            href: String::from(acc.to_str().unwrap()),
+            name: String::from(component.as_os_str().to_str().unwrap()),
         })
+    }
+
+    breadcrumbs
 }
 
 pub fn static_handler(state: State) -> (State, (Mime, String)) {
@@ -25,46 +66,61 @@ pub fn static_handler(state: State) -> (State, (Mime, String)) {
 
     path.push(sanitize_path(request_path));
 
-    let resp = match fs::metadata(&path) {
-        Ok(meta) => {
-            if meta.is_dir() {
-                (TEXT_HTML, directory_listing(&path))
-            } else {
-                let mut buffer = String::new();
-                let mut file = File::open(&path).unwrap();
-                file.read_to_string(&mut buffer);
+    if path.is_dir() {
+        match directory_listing(&path) {
+            Some(entries) => {
+                let breadcrumbs = breadcrumbs(&path);
+                let listing = DirectoryListing {
+                    current_path: path.to_str().unwrap().to_string(),
+                    links: entries,
+                    breadcrumbs: breadcrumbs,
+                };
 
-                (TEXT_PLAIN, buffer)
+                return (state, (TEXT_HTML, listing.render().unwrap()));
+            }
+
+            None => {
+                return (
+                    state,
+                    (
+                        TEXT_HTML,
+                        format!("<h2>No file found at path: {}", &path.display()),
+                    ),
+                );
             }
         }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            (
-                TEXT_HTML,
-                format!("<h2>No file found at path: {}", &path.display()),
-            )
-        }
-    };
+    } else if path.is_file() {
+        let mut buffer = String::new();
+        let mut file = File::open(&path).unwrap();
+        file.read_to_string(&mut buffer);
 
-    (state, resp)
-}
+        return (state, (TEXT_PLAIN, buffer))
+    }
 
-fn render_link(entry: DirEntry) -> String {
-    format!(
-        "<li><a href=\"/{}\">{}</a></li>",
-        sanitize_path(&entry.path()).display(),
-        entry.path().file_name().unwrap().to_str().unwrap()
+    (
+        state,
+        (
+            TEXT_HTML,
+            format!("<h2>No file found at path: {}", &path.display()),
+        ),
     )
 }
 
-fn directory_listing(path: &AsRef<Path>) -> String {
-    let mut entries = fs::read_dir(path)
-        .unwrap()
-        .filter_map(|e| e.ok())
-        .map(|e| render_link(e))
-        .collect::<Vec<_>>();
+fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
+    match fs::read_dir(path) {
+        Ok(entries) => Some(
+            entries
+                .filter_map(|e| e.ok())
+                .map(|e| {
+                    let path = sanitize_path(&e.path());
 
-    entries.sort();
-
-    format!("<ul>{}</ul>", entries.join(""))
+                    Link {
+                        href: String::from(path.to_str().unwrap()),
+                        name: String::from(path.file_name().unwrap().to_str().unwrap()),
+                    }
+                })
+                .collect::<Vec<_>>(),
+        ),
+        Err(_error) => None,
+    }
 }

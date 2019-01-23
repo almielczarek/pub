@@ -7,8 +7,11 @@ edition = "2018"
 [dependencies]
 gotham = "0.3"
 gotham_derive = "0.3"
-tera = "0.11"
+askama = "0.7"
 mime = "0.3"
 serde = "1"
 serde_derive = "1"
 hyper = "0.12"
+
+[build-dependencies]
+askama = "0.7"

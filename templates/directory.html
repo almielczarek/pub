@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.2/css/bulma.min.css">
+    <style>
+     .breadcrumbs li {
+       list-style: none;
+       display: inline-block;
+     }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h3 class="title is-3">Listing directory {{ current_path }}</h3>
+      <nav class="breadcrumb">
+        <ul>
+          {% for crumb in breadcrumbs %}
+            <li><a href="{{ crumb.href }}">{{ crumb.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </nav>
+      <ul>
+        {% for link in links %}
+          <li>
+            <a href="/{{ link.href }}">{{ link.name }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </body>
+</html>
