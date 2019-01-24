@@ -121,7 +121,9 @@ fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
                 })
                 .collect::<Vec<_>>();
 
-            entries.sort();
+            entries.sort_by(|a, b| {
+                a.name.to_lowercase().cmp(&b.name.to_lowercase())
+            });
 
             Some(entries)
                 },
