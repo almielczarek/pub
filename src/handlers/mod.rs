@@ -1,4 +1,3 @@
-use std::ffi::OsString;
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
@@ -10,6 +9,7 @@ use mime::{TEXT_HTML, TEXT_PLAIN};
 
 use askama::Template;
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 struct Link {
     href: String,
     name: String,
@@ -108,8 +108,8 @@ pub fn static_handler(state: State) -> (State, (Mime, String)) {
 
 fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
     match fs::read_dir(path) {
-        Ok(entries) => Some(
-            entries
+        Ok(entries) => {
+            let mut entries = entries
                 .filter_map(|e| e.ok())
                 .map(|e| {
                     let path = sanitize_path(&e.path());
@@ -119,8 +119,12 @@ fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
                         name: String::from(path.file_name().unwrap().to_str().unwrap()),
                     }
                 })
-                .collect::<Vec<_>>(),
-        ),
+                .collect::<Vec<_>>();
+
+            entries.sort();
+
+            Some(entries)
+                },
         Err(_error) => None,
     }
 }
