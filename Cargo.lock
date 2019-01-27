@@ -662,6 +662,7 @@ dependencies = [
  "gotham_derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.21 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
 ]

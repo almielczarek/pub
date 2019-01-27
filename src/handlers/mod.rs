@@ -6,6 +6,7 @@ use gotham::state::State;
 use hyper::Uri;
 use mime::Mime;
 use mime::{TEXT_HTML, TEXT_PLAIN};
+use percent_encoding::percent_decode;
 
 use askama::Template;
 
@@ -60,7 +61,10 @@ fn breadcrumbs(path: &Path) -> Vec<Link> {
 }
 
 pub fn static_handler(state: State) -> (State, (Mime, String)) {
-    let request_path = Path::new(state.borrow::<Uri>().path());
+    let request_uri = state.borrow::<Uri>().path();
+    let request_uri_decoded = percent_decode(request_uri.as_bytes()).decode_utf8().unwrap().to_string();
+
+    let request_path = Path::new(&request_uri_decoded);
 
     let mut path = Path::new(".").to_path_buf();
 
