@@ -4,8 +4,8 @@ use std::path::{Component, Path, PathBuf};
 
 use gotham::state::State;
 use hyper::Uri;
-use mime::Mime;
-use mime::{TEXT_HTML, TEXT_PLAIN};
+use mime::{Mime, TEXT_HTML};
+use mime_guess::guess_mime_type;
 use percent_encoding::percent_decode;
 
 use askama::Template;
@@ -60,9 +60,12 @@ fn breadcrumbs(path: &Path) -> Vec<Link> {
     breadcrumbs
 }
 
-pub fn static_handler(state: State) -> (State, (Mime, String)) {
+pub fn static_handler(state: State) -> (State, (Mime, Vec<u8>)) {
     let request_uri = state.borrow::<Uri>().path();
-    let request_uri_decoded = percent_decode(request_uri.as_bytes()).decode_utf8().unwrap().to_string();
+    let request_uri_decoded = percent_decode(request_uri.as_bytes())
+        .decode_utf8()
+        .unwrap()
+        .to_string();
 
     let request_path = Path::new(&request_uri_decoded);
 
@@ -80,7 +83,7 @@ pub fn static_handler(state: State) -> (State, (Mime, String)) {
                     breadcrumbs: breadcrumbs,
                 };
 
-                return (state, (TEXT_HTML, listing.render().unwrap()));
+                return (state, (TEXT_HTML, listing.render().unwrap().into_bytes()));
             }
 
             None => {
@@ -88,24 +91,37 @@ pub fn static_handler(state: State) -> (State, (Mime, String)) {
                     state,
                     (
                         TEXT_HTML,
-                        format!("<h2>No file found at path: {}", &path.display()),
+                        format!("<h2>No file found at path: {}", &path.display()).into_bytes(),
                     ),
                 );
             }
         }
     } else if path.is_file() {
-        let mut buffer = String::new();
+        let mut buffer = Vec::new();
         let mut file = File::open(&path).unwrap();
-        file.read_to_string(&mut buffer);
+        if let Err(e) = file.read_to_end(&mut buffer) {
+            println!("Could not read file at {}", &path.display());
+            println!("Error: {}", e);
 
-        return (state, (TEXT_PLAIN, buffer))
+            return (
+                state,
+                (
+                    TEXT_HTML,
+                    format!("<h2>Could not read file at path: {}", &path.display()).into_bytes(),
+                ),
+            );
+        };
+
+        let mime_type = guess_mime_type(&path);
+
+        return (state, (mime_type, buffer));
     }
 
     (
         state,
         (
             TEXT_HTML,
-            format!("<h2>No file found at path: {}", &path.display()),
+            format!("<h2>No file found at path: {}", &path.display()).into_bytes(),
         ),
     )
 }
@@ -125,12 +141,10 @@ fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
                 })
                 .collect::<Vec<_>>();
 
-            entries.sort_by(|a, b| {
-                a.name.to_lowercase().cmp(&b.name.to_lowercase())
-            });
+            entries.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
 
             Some(entries)
-                },
+        }
         Err(_error) => None,
     }
 }
