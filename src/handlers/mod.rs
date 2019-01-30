@@ -1,7 +1,8 @@
 use std::fs::{self, File};
-use std::io::Read;
+use std::io::{self, Read};
 use std::path::{Component, Path, PathBuf};
 
+use chrono::{DateTime, Utc};
 use gotham::state::State;
 use hyper::Uri;
 use mime::{Mime, TEXT_HTML};
@@ -14,6 +15,7 @@ use askama::Template;
 struct Link {
     href: String,
     name: String,
+    mtime: String,
 }
 
 #[derive(Template)]
@@ -39,6 +41,14 @@ fn sanitize_path(path: &Path) -> PathBuf {
     acc
 }
 
+fn mtime(path: &Path) -> io::Result<String> {
+    let metadata = fs::metadata(&path)?;
+    let mtime = metadata.modified()?;
+    let date_time: DateTime<Utc> = DateTime::from(mtime);
+
+    Ok(format!("{}", date_time))
+}
+
 fn breadcrumbs(path: &Path) -> Vec<Link> {
     let sanitized = sanitize_path(path);
     let mut acc = PathBuf::new();
@@ -47,6 +57,7 @@ fn breadcrumbs(path: &Path) -> Vec<Link> {
     breadcrumbs.push(Link {
         href: String::from("/"),
         name: String::from("root"),
+        mtime: String::from(""),
     });
 
     for component in sanitized.components() {
@@ -54,6 +65,7 @@ fn breadcrumbs(path: &Path) -> Vec<Link> {
         breadcrumbs.push(Link {
             href: String::from(acc.to_str().unwrap()),
             name: String::from(component.as_os_str().to_str().unwrap()),
+            mtime: String::from(""),
         })
     }
 
@@ -133,10 +145,12 @@ fn directory_listing(path: &AsRef<Path>) -> Option<Vec<Link>> {
                 .filter_map(|e| e.ok())
                 .map(|e| {
                     let path = sanitize_path(&e.path());
+                    let mtime = mtime(&path).unwrap(); // TODO: handle errors
 
                     Link {
                         href: String::from(path.to_str().unwrap()),
                         name: String::from(path.file_name().unwrap().to_str().unwrap()),
+                        mtime: mtime,
                     }
                 })
                 .collect::<Vec<_>>();

@@ -18,13 +18,22 @@
           {% endfor %}
         </ul>
       </nav>
-      <ul>
-        {% for link in links %}
-          <li>
-            <a href="/{{ link.href }}">{{ link.name }}</a>
-          </li>
-        {% endfor %}
-      </ul>
+      <table class="table is-fullwidth">
+        <thead>
+          <tr>
+            <th>Entry</th>
+            <th>Modified At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for link in links %}
+            <tr>
+              <td><a href="/{{ link.href }}">{{ link.name }}</a></td>
+              <td>{{ link.mtime }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </body>
 </html>
