@@ -14,7 +14,7 @@
       <nav class="breadcrumb">
         <ul>
           {% for crumb in breadcrumbs %}
-            <li><a href="{{ crumb.href }}">{{ crumb.name }}</a></li>
+            <li><a href="{{ crumb.0 }}">{{ crumb.1 }}</a></li>
           {% endfor %}
         </ul>
       </nav>
@@ -26,10 +26,10 @@
           </tr>
         </thead>
         <tbody>
-          {% for link in links %}
+          {% for entry in entries %}
             <tr>
-              <td><a href="/{{ link.href }}">{{ link.name }}</a></td>
-              <td>{{ link.mtime }}</td>
+              <td><a href="/{{ entry.href }}">{{ entry.name }}</a></td>
+              <td>{{ entry.mtime }}</td>
             </tr>
           {% endfor %}
         </tbody>

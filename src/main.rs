@@ -1,6 +1,7 @@
 use gotham::router::builder::*;
 
 mod handlers;
+mod pub_static;
 
 use handlers::static_handler;
 
