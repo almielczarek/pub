@@ -50,6 +50,7 @@ pub struct Entry {
     pub href: String,
     pub name: String,
     pub mtime: String,
+    pub size: u64, // In bytes
 }
 
 impl Entry {
@@ -62,6 +63,7 @@ impl Entry {
             href: path_to_string(&fs_entry.path()),
             name: String::from(fs_entry.file_name().to_string_lossy()),
             mtime: format!("{}", mtime_datetime),
+            size: meta.len(),
         })
     }
 }
