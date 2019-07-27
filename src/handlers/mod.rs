@@ -5,6 +5,7 @@ use gotham::state::State;
 use hyper::Uri;
 use mime::{Mime, TEXT_HTML};
 use percent_encoding::percent_decode;
+use chrono::Local;
 
 use crate::pub_static::{Entry, Static};
 
@@ -24,6 +25,9 @@ pub fn static_handler(state: State) -> (State, (Mime, Vec<u8>)) {
         .to_string();
 
     let request_path = Path::new(&request_uri_decoded);
+
+    let time = Local::now();
+    println!("[{}] GET {}", time, request_path.display());
 
     let response = match Static::new(&request_path) {
         Ok(s) => match s {
