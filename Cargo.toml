@@ -15,6 +15,7 @@ hyper = "0.12"
 percent-encoding = "1"
 mime_guess = "2.0.0-alpha.6"
 chrono = "0.4"
+zip-dir = "0.1"
 
 [build-dependencies]
 askama = "0.7"

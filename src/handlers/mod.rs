@@ -1,11 +1,12 @@
+use std::io::Cursor;
 use std::path::Path;
 
 use askama::Template;
+use chrono::Local;
 use gotham::state::State;
-use hyper::Uri;
+use hyper::{Body, Response, StatusCode, Uri};
 use mime::{Mime, TEXT_HTML};
 use percent_encoding::percent_decode;
-use chrono::Local;
 
 use crate::pub_static::{Entry, Static};
 
@@ -58,4 +59,33 @@ pub fn static_handler(state: State) -> (State, (Mime, Vec<u8>)) {
     };
 
     (state, response)
+}
+
+pub fn zip_archive_handler(state: State) -> (State, hyper::Response<Body>) {
+    let request_uri = state.borrow::<Uri>().path();
+    let request_uri_decoded = percent_decode(request_uri.as_bytes())
+        .decode_utf8()
+        .unwrap()
+        .to_string();
+
+    let time = Local::now();
+    println!("[{}] GET {}", time, request_uri_decoded);
+
+    let request_path = Path::new(&request_uri_decoded)
+        .strip_prefix("/archive")
+        .unwrap();
+
+    let request_path = Path::new(".").join(request_path);
+
+    let buffer = Vec::new();
+    let w = Cursor::new(buffer);
+    let w = zip_dir::zip_dir(&request_path, w, None).unwrap();
+
+    let mut response = Response::builder();
+
+    response
+        .header("Content-Type", "application/zip")
+        .status(StatusCode::OK);
+
+    (state, response.body(w.into_inner().into()).unwrap())
 }
